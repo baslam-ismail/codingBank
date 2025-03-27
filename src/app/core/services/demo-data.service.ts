@@ -124,11 +124,9 @@ export class DemoDataService {
   private accountsSubject = new BehaviorSubject<Account[]>([]);
   private transactionsSubject = new BehaviorSubject<Transaction[]>([]);
 
-  // Service d'authentification pour obtenir l'utilisateur actuel
-  // private authService = inject(AuthService);
   private currentUserCode: string | null = null;
 
-  constructor(private authService : AuthService) {
+  constructor(private authService: AuthService) {
     console.log('DemoDataService initialized');
     // S'abonner aux changements d'utilisateur
     this.authService.currentUser$.subscribe(user => {
@@ -145,7 +143,7 @@ export class DemoDataService {
 
   // Charger les données de l'utilisateur
   private loadUserData(clientCode: string): void {
-    console.log(`Loading demo data for user ${clientCode}`);
+    console.log(`DemoDataService: Loading demo data for user ${clientCode}`);
 
     // Si l'utilisateur existe déjà dans notre système
     if (this.userAccounts[clientCode]) {
@@ -218,9 +216,11 @@ export class DemoDataService {
   // Méthodes pour manipuler les données
   addTransaction(transaction: Transaction): void {
     if (!this.currentUserCode) {
-      console.error('No current user to add transaction');
+      console.error('DemoDataService: No current user to add transaction');
       return;
     }
+
+    console.log('DemoDataService: Adding transaction', transaction);
 
     // Ajouter la transaction à la liste de l'utilisateur actuel
     const currentTransactions = this.userTransactions[this.currentUserCode] || [];
@@ -230,21 +230,24 @@ export class DemoDataService {
     // Mettre à jour les soldes des comptes
     this.updateAccountBalances(transaction);
 
-    console.log('Transaction added:', transaction);
-    console.log('Updated transactions:', this.userTransactions[this.currentUserCode]);
+    console.log('DemoDataService: Transaction added');
   }
 
   updateAccountBalances(transaction: Transaction): void {
     if (!this.currentUserCode) {
-      console.error('No current user to update account balances');
+      console.error('DemoDataService: No current user to update account balances');
       return;
     }
 
     const currentAccounts = this.userAccounts[this.currentUserCode] || [];
 
+    console.log('DemoDataService: Before balance update:',
+      currentAccounts.map(a => ({id: a.id, balance: a.balance})));
+
     const updatedAccounts = currentAccounts.map(account => {
       // Si c'est le compte émetteur, on réduit le solde
       if (account.id === transaction.emitterAccountId) {
+        console.log(`DemoDataService: Reducing balance for account ${account.id} by ${transaction.amount}`);
         return {
           ...account,
           balance: account.balance - transaction.amount,
@@ -254,6 +257,7 @@ export class DemoDataService {
 
       // Si c'est le compte destinataire, on augmente le solde
       if (account.id === transaction.receiverAccountId) {
+        console.log(`DemoDataService: Increasing balance for account ${account.id} by ${transaction.amount}`);
         return {
           ...account,
           balance: account.balance + transaction.amount,
@@ -266,20 +270,34 @@ export class DemoDataService {
 
     this.userAccounts[this.currentUserCode] = updatedAccounts;
     this.accountsSubject.next(updatedAccounts);
+
+    console.log('DemoDataService: After balance update:',
+      updatedAccounts.map(a => ({id: a.id, balance: a.balance})));
   }
 
   getAccountById(accountId: string): Account | null {
+    console.log(`DemoDataService: Getting account by ID: ${accountId}`);
     const accounts = this.accountsSubject.getValue();
-    return accounts.find(account => account.id === accountId) || null;
+    const account = accounts.find(account => account.id === accountId);
+    console.log(`DemoDataService: Found account:`, account);
+    return account || null;
   }
 
   getTransactionsByAccountId(accountId: string): Transaction[] {
+    console.log(`DemoDataService: Getting transactions for account ${accountId}`);
     const transactions = this.transactionsSubject.getValue();
-    return transactions.filter(
+
+
+
+
+    const filteredTransactions = this.transactionsSubject.getValue().filter(
       transaction =>
         transaction.emitterAccountId === accountId ||
         transaction.receiverAccountId === accountId
     );
+
+    console.log(`DemoDataService: Found ${filteredTransactions.length} transactions for account ${accountId}`);
+    return filteredTransactions;
   }
 
   // Ajouter un nouvel utilisateur de démo

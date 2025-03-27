@@ -1,5 +1,5 @@
 // src/app/features/dashboard/pages/dashboard/dashboard.component.ts
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -8,7 +8,7 @@ import { AccountSummaryComponent } from '../../components/account-summary/accoun
 import { DataUpdateService } from '../../../../core/services/data-update.service';
 import { AccountStore } from '../../../../store';
 import { GetAccountsUseCase, GetAccountDetailsUseCase } from '../../../../usecases';
-// import {AccountActivityComponent} from '../../../accounts/components/account-activity/account-activity.component';
+import { AccountActivityComponent } from '../../../accounts/components/account-activity/account-activity.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -16,8 +16,8 @@ import { GetAccountsUseCase, GetAccountDetailsUseCase } from '../../../../usecas
   imports: [
     CommonModule,
     RouterLink,
-    // AccountActivityComponent,
-    // AccountSummaryComponent
+    // AccountSummaryComponent,
+    AccountActivityComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
@@ -34,19 +34,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private getAccountsUseCase = inject(GetAccountsUseCase);
   private getAccountDetailsUseCase = inject(GetAccountDetailsUseCase);
   private dataUpdateService = inject(DataUpdateService);
+  private cdr = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
     // S'abonner aux sélecteurs du store
     this.subscriptions.add(
       this.accountStore.selectAccounts().subscribe(accounts => {
+        console.log('Dashboard: Accounts updated from store', accounts);
         this.accounts = accounts;
         this.calculateTotalBalance();
+        this.cdr.detectChanges(); // Forcer la détection des changements
       })
     );
 
     this.subscriptions.add(
       this.accountStore.selectSelectedAccount().subscribe(account => {
+        console.log('Dashboard: Selected account updated from store', account);
         this.selectedAccount = account;
+        this.cdr.detectChanges(); // Forcer la détection des changements
       })
     );
 
@@ -65,7 +70,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // S'abonner aux notifications de mise à jour des comptes
     this.subscriptions.add(
       this.dataUpdateService.accountsUpdated$.subscribe(() => {
-        console.log('Notification reçue: rafraîchissement des comptes');
+        console.log('Dashboard: Account update notification received');
         this.loadAccounts();
       })
     );
@@ -79,35 +84,41 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadAccounts(): void {
+    console.log('Dashboard: Loading accounts');
     this.getAccountsUseCase.execute().subscribe({
       next: () => {
-        console.log('Comptes chargés avec succès');
+        console.log('Dashboard: Accounts loaded successfully');
         // Si aucun compte n'est sélectionné et qu'il y a des comptes disponibles,
         // sélectionner le premier compte
         const accounts = this.accountStore.getState().accounts;
         if (!this.selectedAccount && accounts.length > 0) {
           this.selectAccount(accounts[0].id);
+        } else if (this.selectedAccount) {
+          // Rafraîchir les détails du compte sélectionné pour garantir la cohérence
+          this.selectAccount(this.selectedAccount.id);
         }
       },
       error: (err) => {
-        console.error('Erreur lors du chargement des comptes', err);
+        console.error('Dashboard: Error loading accounts', err);
       }
     });
   }
 
   selectAccount(accountId: string): void {
+    console.log(`Dashboard: Selecting account ${accountId}`);
     this.getAccountDetailsUseCase.execute(accountId).subscribe({
       next: () => {
-        console.log('Compte sélectionné:', accountId);
+        console.log(`Dashboard: Account ${accountId} selected successfully`);
       },
       error: (err) => {
-        console.error('Erreur lors de la sélection du compte', err);
+        console.error('Dashboard: Error selecting account', err);
       }
     });
   }
 
   private calculateTotalBalance(): void {
     this.totalBalance = this.accounts.reduce((total, account) => total + account.balance, 0);
+    console.log(`Dashboard: Total balance calculated: ${this.totalBalance}`);
   }
 
   formatAmount(amount: number): string {

@@ -1,0 +1,65 @@
+.account-activity {
+  .transaction-item {
+    transition: all 0.2s ease;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    &.transaction-incoming {
+      border-left: 3px solid rgba(16, 185, 129, 0.7);
+    }
+
+    &.transaction-outgoing {
+      border-left: 3px solid rgba(239, 68, 68, 0.7);
+    }
+  }
+
+  // Styles pour les transactions entrantes
+  .transaction-incoming-icon {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #059669;
+  }
+
+  .transaction-incoming-strong {
+    color: #059669;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: rgba(16, 185, 129, 0.1);
+  }
+
+  .transaction-incoming-amount {
+    color: #059669;
+    font-weight: 600;
+    background-color: rgba(16, 185, 129, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  // Styles pour les transactions sortantes
+  .transaction-outgoing-icon {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #dc2626;
+  }
+
+  .transaction-outgoing-strong {
+    color: #dc2626;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+
+  .transaction-outgoing-amount {
+    color: #dc2626;
+    font-weight: 600;
+    background-color: rgba(239, 68, 68, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+}

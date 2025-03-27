@@ -30,24 +30,28 @@
     </div>
 
     <!-- Détails du compte -->
-    <!-- Pour le numéro de compte -->
-    <div *ngIf="account" class="mt-1 flex items-center text-sm text-gray-500">
-      <span>Numéro de compte: {{ account.id || account.accountNumber || 'Non disponible' }}</span>
-    </div>
-
-    <div *ngIf="account" class="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-6" >
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <div class="text-sm text-gray-500">Solde actuel</div>
+    <div *ngIf="account" class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+      <!-- En-tête du compte -->
+      <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-semibold text-gray-900">{{ account.label }}</h2>
           <div [ngClass]="{
-                'text-2xl font-bold': true,
-                'text-green-600': account.balance > 0,
-                'text-red-600': account.balance < 0,
-                'text-gray-600': account.balance === 0
+                'text-xl font-bold px-3 py-1 rounded-full': true,
+                'bg-green-100 text-green-800': account.balance > 0,
+                'bg-red-100 text-red-800': account.balance < 0,
+                'bg-gray-100 text-gray-800': account.balance === 0
               }">
             {{ formatAmount(account.balance) }}
           </div>
         </div>
+        <!-- Information de compte -->
+        <div class="mt-1 text-sm text-gray-500">
+          <span>Numéro de compte: {{ account.accountNumber || account.id || 'Non disponible' }}</span>
+        </div>
+      </div>
 
+      <!-- Informations détaillées -->
+      <div class="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-gray-50 p-4 rounded-lg">
           <div class="text-sm text-gray-500">Type de compte</div>
           <div class="text-lg font-medium text-gray-900">
@@ -55,81 +59,17 @@
           </div>
         </div>
 
-        <div class="bg-gray-50 p-4 rounded-lg col-span-1 md:col-span-2">
+        <div class="bg-gray-50 p-4 rounded-lg">
           <div class="text-sm text-gray-500">Date de création</div>
           <div class="text-lg font-medium text-gray-900">
             {{ isValidDate(account.createdAt) ? formatDate(account.createdAt) : 'Non disponible' }}
           </div>
         </div>
-
-    </div>
-
-    <div class="px-6 py-5 border-t border-gray-200">
-      <h2 class="text-lg font-medium text-gray-900">Transactions récentes</h2>
-
-      <!-- Loader pour les transactions -->
-      <div *ngIf="isTransactionsLoading" class="flex justify-center py-4">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
       </div>
 
-      <!-- Liste des transactions récentes -->
-      <!-- Liste des transactions récentes avec la bonne structure -->
-      <div *ngIf="!isTransactionsLoading && recentTransactions.length > 0" class="mt-4">
-        <ul class="divide-y divide-gray-200">
-          <li *ngFor="let transaction of recentTransactions" class="py-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center">
-                <!-- Icône pour indiquer le type de transaction -->
-                <div class="mr-3">
-                  <!-- Transaction entrante -->
-                  <div *ngIf="isIncoming(transaction)"
-                       class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
-                    </svg>
-                  </div>
-
-                  <!-- Transaction sortante -->
-                  <div *ngIf="isOutgoing(transaction)"
-                       class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-
-                <div>
-                  <!-- Description et date -->
-                  <p class="text-sm font-medium text-gray-900">{{ transaction.description || 'Sans description' }}</p>
-                  <p class="text-sm text-gray-500">
-                    {{ isValidDate(transaction.emittedAt || transaction.createdAt) ?
-                    formatDate(transaction.emittedAt  || transaction.createdAt) :
-                    'Date inconnue' }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Montant avec condition basée sur isIncoming / isOutgoing -->
-              <div [ngClass]="{
-              'px-3 py-1 rounded-full text-sm font-medium shadow-sm': true,
-              'bg-green-200 text-green-800 border border-green-300': isIncoming(transaction),
-              'bg-red-200 text-red-800 border border-red-300': isOutgoing(transaction)
-            }">
-                <span class="font-bold">{{ isIncoming(transaction) ? '+' : '-' }}</span>{{ formatAmount(Math.abs(transaction.amount)) }}
-              </div>
-            </div>
-          </li>
-        </ul>
-      </div>
-
-      <div class="mt-6">
-<!--        <app-account-activity *ngIf="account" [account]="account"></app-account-activity>-->
-
-      </div>
-
-      <!-- Message si aucune transaction -->
-      <div *ngIf="!isTransactionsLoading && recentTransactions.length === 0" class="mt-4 text-center py-8 text-gray-500">
-        Aucune transaction récente pour ce compte
+      <!-- Activité du compte (Section à intégrer) -->
+      <div class="px-6 py-5 border-t border-gray-200">
+        <app-account-activity *ngIf="account" [account]="account"></app-account-activity>
       </div>
     </div>
   </div>

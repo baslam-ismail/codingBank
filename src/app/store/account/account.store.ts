@@ -46,18 +46,50 @@ export class AccountStore {
 
 
   setAccounts(accounts: Account[]): void {
+    console.log(`AccountStore: Setting ${accounts.length} accounts`);
     const currentState = this.state.getValue();
     this.state.next({
       ...currentState,
       accounts
     });
+
+    // Si un compte est sélectionné, mettre à jour aussi ses informations
+    if (currentState.selectedAccount) {
+      const updatedSelectedAccount = accounts.find(a => a.id === currentState.selectedAccount?.id);
+      if (updatedSelectedAccount) {
+        this.setSelectedAccount(updatedSelectedAccount);
+      }
+    }
   }
 
   setSelectedAccount(account: Account | null): void {
+    console.log(`AccountStore: Setting selected account`, account);
     const currentState = this.state.getValue();
     this.state.next({
       ...currentState,
       selectedAccount: account
+    });
+  }
+
+  updateAccount(updatedAccount: Account): void {
+    console.log(`AccountStore: Updating account ${updatedAccount.id}`);
+    const currentState = this.state.getValue();
+
+    // Mettre à jour le compte dans la liste
+    const updatedAccounts = currentState.accounts.map(account =>
+      account.id === updatedAccount.id ? updatedAccount : account
+    );
+
+    // Mettre à jour également le compte sélectionné si c'est le même
+    const updatedSelectedAccount =
+      currentState.selectedAccount?.id === updatedAccount.id
+        ? updatedAccount
+        : currentState.selectedAccount;
+
+    this.state.next({
+      ...currentState,
+      accounts: updatedAccounts,
+      selectedAccount: updatedSelectedAccount
     });
   }
 

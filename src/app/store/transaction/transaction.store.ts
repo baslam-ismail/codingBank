@@ -22,7 +22,10 @@ export class TransactionStore {
   }
 
   selectTransactions(): Observable<Transaction[]> {
-    return this.state$.pipe(map(state => state.transactions));
+    return this.state$.pipe(map(state => {
+      console.log('TransactionStore: Returning all transactions:', state.transactions);
+      return state.transactions;
+    }));
   }
 
   selectLoading(): Observable<boolean> {
@@ -34,19 +37,48 @@ export class TransactionStore {
   }
 
   selectTransactionsByAccountId(accountId: string): Observable<Transaction[]> {
+    console.log(`TransactionStore: Selecting transactions for account ${accountId}`);
     return this.selectTransactions().pipe(
-      map(transactions => transactions.filter(
-        t => t.emitterAccountId === accountId || t.receiverAccountId === accountId
-      ))
+      map(transactions => {
+        // Log pour voir toutes les transactions actuellement dans le store
+        console.log(`TransactionStore: All transactions in store:`,
+          transactions.map(t => {
+            // Logique de filtrage plus robuste pour supporter différentes structures
+            const emitterId = t.emitter?.id || t.emitterAccountId;
+            const receiverId = t.receiver?.id || t.receiverAccountId;
+            return {id: t.id, emitter: emitterId, receiver: receiverId};
+          }));
+
+        // Filtrage plus robuste pour supporter différentes structures
+        const filteredTransactions = transactions.filter(t => {
+          const emitterId = t.emitter?.id || t.emitterAccountId;
+          const receiverId = t.receiver?.id || t.receiverAccountId;
+          return emitterId === accountId || receiverId === accountId;
+        });
+
+        console.log(`TransactionStore: Found ${filteredTransactions.length} transactions for account ${accountId}`);
+        return filteredTransactions;
+      })
     );
   }
 
-
+  // Méthodes de mise à jour de l'état
   setTransactions(transactions: Transaction[]): void {
+    console.log(`TransactionStore: Setting ${transactions.length} transactions`, transactions);
     const currentState = this.state.getValue();
     this.state.next({
       ...currentState,
       transactions
+    });
+  }
+
+  addTransaction(transaction: Transaction): void {
+    console.log(`TransactionStore: Adding transaction`, transaction);
+    const currentState = this.state.getValue();
+    const updatedTransactions = [...currentState.transactions, transaction];
+    this.state.next({
+      ...currentState,
+      transactions: updatedTransactions
     });
   }
 
@@ -68,5 +100,10 @@ export class TransactionStore {
 
   resetState(): void {
     this.state.next(initialState);
+  }
+
+  // Méthode utilitaire pour obtenir l'état actuel
+  getState(): TransactionsState {
+    return this.state.getValue();
   }
 }

@@ -1,0 +1,107 @@
+<div class="account-activity">
+  <h3 class="text-lg font-medium text-gray-900 mb-4">Activité récente</h3>
+
+  <!-- Information de débogage -->
+  <div *ngIf="showDebugInfo" class="bg-blue-50 p-2 mb-4 rounded text-xs">
+    <p>Compte actuel: {{ account?.id }}</p>
+    <p>Nombre de transactions: {{ recentTransactions.length }}</p>
+    <p>Transactions: {{ recentTransactions | json }}</p>
+  </div>
+
+  <!-- Loader pendant le chargement -->
+  <div *ngIf="isLoading" class="flex justify-center py-4">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-4">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3">
+        <p class="text-sm text-red-700">{{ error }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des transactions -->
+  <div *ngIf="!isLoading && !error && recentTransactions.length > 0">
+    <ul class="space-y-3">
+      <li *ngFor="let transaction of recentTransactions"
+          class="transaction-item p-4 rounded-lg shadow-sm border border-gray-100"
+          [ngClass]="getTransactionClass(transaction)">
+        <div class="flex items-center justify-between">
+          <!-- Avatar et détails de la transaction -->
+          <div class="flex items-center">
+            <!-- Avatar avec initiales -->
+            <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                 [ngClass]="{'transaction-incoming-icon': isIncoming(transaction), 'transaction-outgoing-icon': isOutgoing(transaction)}">
+              <span class="text-sm font-bold">{{ getPartnerInitials(transaction) }}</span>
+            </div>
+
+            <!-- Description et informations -->
+            <div>
+              <p class="text-sm font-medium text-gray-900">{{ transaction.description || 'Sans description' }}</p>
+              <p class="text-xs">
+                <span *ngIf="isIncoming(transaction)" class="flex items-center transaction-incoming-strong">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Reçu de <strong>{{ getPartnerName(transaction) }}</strong></span>
+                </span>
+                <span *ngIf="isOutgoing(transaction)" class="flex items-center transaction-outgoing-strong">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Envoyé à <strong>{{ getPartnerName(transaction) }}</strong></span>
+                </span>
+              </p>
+              <p class="text-xs text-gray-400 mt-1">{{ formatDate(transaction.emittedAt || transaction.createdAt) }}</p>
+            </div>
+          </div>
+
+          <!-- Montant -->
+          <div [ngClass]="{'transaction-incoming-amount': isIncoming(transaction), 'transaction-outgoing-amount': isOutgoing(transaction)}">
+            {{ formatAmount(transaction) }}
+          </div>
+        </div>
+
+        <!-- Info de débogage en mode démo -->
+        <div *ngIf="showDebugInfo" class="mt-2 text-xs text-gray-400 border-t border-gray-100 pt-2">
+          ID: {{ transaction.id }} |
+          Emitter: {{ transaction.emitter?.id || transaction.emitterAccountId || 'undefined' }} |
+          Receiver: {{ transaction.receiver?.id || transaction.receiverAccountId || 'undefined' }}
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Message si aucune transaction -->
+  <div *ngIf="!isLoading && !error && (!recentTransactions || recentTransactions.length === 0)" class="text-center py-8 bg-gray-50 rounded-lg">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+    <p class="mt-2 text-sm text-gray-600">Aucune transaction récente pour ce compte</p>
+    <div class="mt-4">
+      <a routerLink="/transactions/new" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Faire une nouvelle transaction
+      </a>
+    </div>
+  </div>
+
+  <!-- Lien vers l'historique complet -->
+  <div *ngIf="!isLoading && recentTransactions && recentTransactions.length > 0" class="mt-4 text-right">
+    <a [routerLink]="['/transactions/history']" class="text-sm text-indigo-600 hover:text-indigo-800 inline-flex items-center">
+      Voir tout l'historique
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+      </svg>
+    </a>
+  </div>
+</div>

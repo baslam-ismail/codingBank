@@ -24,7 +24,7 @@ export class DataUpdateService {
    * Notifie tous les composants qu'il faut rafraîchir les données des comptes
    */
   notifyAccountsUpdated(): void {
-    console.log('Notification: mise à jour des comptes');
+    console.log('DataUpdateService: Notification de mise à jour des comptes');
     this.accountsUpdated.next();
   }
 
@@ -33,7 +33,7 @@ export class DataUpdateService {
    * @param accountId ID du compte concerné
    */
   notifyTransactionsUpdated(accountId: string): void {
-    console.log(`Notification: mise à jour des transactions pour le compte ${accountId}`);
+    console.log(`DataUpdateService: Notification de mise à jour des transactions pour le compte ${accountId}`);
     this.transactionsUpdated.next(accountId);
   }
 }
