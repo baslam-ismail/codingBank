@@ -1,0 +1,32 @@
+
+.numeric-keypad {
+  margin: 1rem 0;
+
+  .keypad-button {
+    @apply w-full py-3 px-3 text-lg font-medium rounded-lg transition duration-200;
+    @apply bg-white border border-indigo-200 text-indigo-800;
+    @apply hover:bg-indigo-50 hover:border-indigo-300;
+    @apply active:bg-indigo-100 active:transform active:scale-95;
+    @apply focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50;
+
+    // Effet 3D modéré pour les touches
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.05);
+
+    &:hover {
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    &:active {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    &.keypad-action {
+      @apply bg-red-50 text-red-600 border-red-200;
+      @apply hover:bg-red-100 hover:border-red-300;
+    }
+  }
+
+  .empty-key {
+    @apply w-full py-3 px-3;
+  }
+}

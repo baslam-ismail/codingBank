@@ -1,0 +1,17 @@
+<div class="numeric-keypad">
+  <div class="grid grid-cols-3 gap-3">
+    <ng-container *ngFor="let row of keys">
+      <ng-container *ngFor="let key of row">
+        <button
+          *ngIf="key !== ''"
+          (click)="onKeyPress(key)"
+          class="keypad-button"
+          [ngClass]="{'keypad-action': key === 'X'}"
+        >
+          {{ key }}
+        </button>
+        <div *ngIf="key === ''" class="empty-key"></div>
+      </ng-container>
+    </ng-container>
+  </div>
+</div>

@@ -1,0 +1,81 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <!-- Entête de la page -->
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-gray-900">Mes comptes</h1>
+      <p class="mt-1 text-sm text-gray-500">Consultez et gérez tous vos comptes bancaires</p>
+    </div>
+
+    <!-- Loader pendant le chargement -->
+    <div *ngIf="isLoading" class="flex justify-center py-8">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-red-700">{{ error }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liste des comptes -->
+    <div *ngIf="!isLoading && !error && accounts.length > 0" class="space-y-4">
+      <div *ngFor="let account of accounts"
+           class="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+           [routerLink]="['/accounts', account.id]">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">{{ account.label }}</h3>
+            <p class="text-sm text-gray-500 mt-1">
+              {{ account.id || account.accountNumber || 'N° de compte non disponible' }}
+            </p>
+          </div>
+          <div class="text-right">
+                <span [ngClass]="{
+                  'text-xl font-bold': true,
+                  'text-green-600': account.balance > 0,
+                  'text-red-600': account.balance < 0,
+                  'text-gray-600': account.balance === 0
+                }">
+                  {{ formatAmount(account.balance) }}
+                </span>
+            <div class="text-xs text-gray-500 mt-1">
+                  <span [ngClass]="{
+                    'px-2 py-1 rounded-full text-xs': true,
+                    'bg-blue-100 text-blue-800': account.type === 'CHECKING',
+                    'bg-green-100 text-green-800': account.type === 'SAVINGS',
+                    'bg-purple-100 text-purple-800': account.type === 'TERM_DEPOSIT',
+                    'bg-gray-100 text-gray-800': !account.type
+                  }">
+                    {{ getAccountTypeName(account.type) }}
+                  </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message si aucun compte -->
+    <div *ngIf="!isLoading && !error && accounts.length === 0" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-yellow-700">
+            Vous n'avez pas encore de compte. Veuillez contacter votre conseiller pour en ouvrir un.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
