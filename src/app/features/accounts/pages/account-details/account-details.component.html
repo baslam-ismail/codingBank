@@ -122,6 +122,11 @@
         </ul>
       </div>
 
+      <div class="mt-6">
+<!--        <app-account-activity *ngIf="account" [account]="account"></app-account-activity>-->
+
+      </div>
+
       <!-- Message si aucune transaction -->
       <div *ngIf="!isTransactionsLoading && recentTransactions.length === 0" class="mt-4 text-center py-8 text-gray-500">
         Aucune transaction récente pour ce compte

@@ -1,13 +1,14 @@
+// src/app/features/transactions/pages/new-transaction/new-transaction.component.ts
+
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AccountsService } from '../../../../core/services/accounts.service';
-import { TransactionsService } from '../../../../core/services/transactions.service';
 import { Account } from '../../../../models/account.model';
 import { CreateTransactionRequest } from '../../../../models/transaction.model';
-import { GetAccountsUseCase } from '../../../../usecases';
-import {AccountStore} from '../../../../store';
+import { GetAccountsUseCase, CreateTransactionUseCase } from '../../../../usecases';
+import { AccountStore } from '../../../../store';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-new-transaction',
@@ -24,12 +25,12 @@ export class NewTransactionComponent implements OnInit {
   isAccountsLoading = true;
   errorMessage: string | null = null;
   successMessage: string | null = null;
+  showDebugInfo = environment.demo; // Afficher les infos de débogage en mode démo
 
   private fb = inject(FormBuilder);
-  private accountsService = inject(AccountsService);
-  private transactionsService = inject(TransactionsService);
   private router = inject(Router);
   private getAccountsUseCase = inject(GetAccountsUseCase);
+  private createTransactionUseCase = inject(CreateTransactionUseCase);
   private accountStore = inject(AccountStore);
 
   ngOnInit(): void {
@@ -61,15 +62,21 @@ export class NewTransactionComponent implements OnInit {
 
   loadAccounts(): void {
     this.isAccountsLoading = true;
-    this.accountsService.getAccounts().subscribe({
-      next: (accounts) => {
-        this.sourceAccounts = accounts;
-        this.isAccountsLoading = false;
 
-        // Si des comptes sont disponibles, sélectionner le premier par défaut
-        if (accounts.length > 0) {
-          this.transactionForm.patchValue({ emitterAccountId: accounts[0].id });
-        }
+    this.getAccountsUseCase.execute().subscribe({
+      next: () => {
+        // S'abonner au store pour récupérer les comptes
+        this.accountStore.selectAccounts().subscribe(accounts => {
+          this.sourceAccounts = accounts;
+          this.isAccountsLoading = false;
+
+          // Si des comptes sont disponibles, sélectionner le premier par défaut
+          if (this.sourceAccounts.length > 0) {
+            this.transactionForm.patchValue({
+              emitterAccountId: this.sourceAccounts[0].id
+            });
+          }
+        });
       },
       error: (error) => {
         this.errorMessage = 'Impossible de charger vos comptes. Veuillez réessayer.';
@@ -111,46 +118,30 @@ export class NewTransactionComponent implements OnInit {
 
     const transactionData: CreateTransactionRequest = this.transactionForm.value;
 
-    this.transactionsService.createTransaction(transactionData).subscribe({
+    this.createTransactionUseCase.execute(transactionData).subscribe({
       next: (response) => {
         this.isLoading = false;
         this.successMessage = 'La transaction a été effectuée avec succès.';
 
-        // Mettre à jour les soldes de tous les comptes
-        this.refreshAllAccountData();
+        // Ajouter les détails de la transaction pour le mode démo
+        if (this.showDebugInfo) {
+          this.successMessage += ` ID de transaction: ${response.id}. Transfert de ${this.formatAmount(response.amount)} du compte ${response.emitterAccountId} vers le compte ${response.receiverAccountId}.`;
+        }
 
-        // Réinitialiser le formulaire
-        this.transactionForm.get('amount')?.setValue(0);
-        this.transactionForm.get('description')?.setValue('');
+        // Réinitialiser partiellement le formulaire
+        this.transactionForm.patchValue({
+          amount: 0,
+          description: ''
+        });
 
         // Rediriger après un délai
         setTimeout(() => {
-          this.router.navigate(['/accounts']);
-        }, 2000);
+          this.router.navigate(['/transactions/history']);
+        }, 3000);
       },
       error: (error) => {
         this.isLoading = false;
         this.errorMessage = error.message || 'Une erreur est survenue lors de la transaction.';
-      }
-    });
-  }
-
-  /**
-   * Rafraîchit les données de tous les comptes après une transaction
-   */
-  refreshAllAccountData(): void {
-    // Utiliser le GetAccountsUseCase pour mettre à jour tous les comptes
-    this.getAccountsUseCase.execute().subscribe({
-      next: (accounts) => {
-        console.log('Comptes mis à jour après transaction:', accounts);
-
-        // Vous pouvez également émettre un événement pour informer d'autres composants
-        // que les données ont été mises à jour
-        this.accountStore.setLoading(false);
-
-      },
-      error: (error) => {
-        console.error('Erreur lors de la mise à jour des comptes:', error);
       }
     });
   }
@@ -208,5 +199,11 @@ export class NewTransactionComponent implements OnInit {
     const emitterId = this.transactionForm.get('emitterAccountId')?.value;
     const receiverId = this.transactionForm.get('receiverAccountId')?.value;
     return emitterId && receiverId && emitterId === receiverId;
+  }
+
+  // Afficher des informations détaillées sur le compte en mode démo
+  getAccountDebugInfo(account: Account): string {
+    if (!this.showDebugInfo) return '';
+    return ` (ID: ${account.id}, Numéro: ${account.accountNumber})`;
   }
 }

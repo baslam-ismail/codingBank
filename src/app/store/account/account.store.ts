@@ -80,4 +80,8 @@ export class AccountStore {
   resetState(): void {
     this.state.next(initialState);
   }
+
+  getState(): AccountsState {
+    return this.state.getValue();
+  }
 }

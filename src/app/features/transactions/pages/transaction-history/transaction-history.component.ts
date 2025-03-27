@@ -1,46 +1,77 @@
 // src/app/features/transactions/pages/transaction-history/transaction-history.component.ts
-import { Component, OnInit, inject } from '@angular/core';
+
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { TransactionsService } from '../../../../core/services/transactions.service';
-import { AccountsService } from '../../../../core/services/accounts.service';
+import { Subscription } from 'rxjs';
 import { Transaction } from '../../../../models/transaction.model';
 import { Account } from '../../../../models/account.model';
+import { GetTransactionsUseCase, GetAccountsUseCase } from '../../../../usecases';
+import { AccountStore, TransactionStore } from '../../../../store';
+import { DataUpdateService } from '../../../../core/services/data-update.service';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-transaction-history',
   standalone: true,
   imports: [CommonModule, RouterLink],
   templateUrl: './transaction-history.component.html',
-  styles: []
 })
-export class TransactionHistoryComponent implements OnInit {
+export class TransactionHistoryComponent implements OnInit, OnDestroy {
   transactions: Transaction[] = [];
   accounts: Account[] = [];
   selectedAccountId: string | null = null;
 
   isLoading = true;
   errorMessage: string | null = null;
+  showDebugInfo = environment.demo; // Afficher les infos de débogage en mode démo
 
-  private accountsService = inject(AccountsService);
-  private transactionsService = inject(TransactionsService);
+  private subscriptions = new Subscription();
+  private getTransactionsUseCase = inject(GetTransactionsUseCase);
+  private getAccountsUseCase = inject(GetAccountsUseCase);
+  private accountStore = inject(AccountStore);
+  private transactionStore = inject(TransactionStore);
+  private dataUpdateService = inject(DataUpdateService);
 
   ngOnInit(): void {
     this.loadAccounts();
+
+    // S'abonner aux mises à jour des transactions
+    this.subscriptions.add(
+      this.dataUpdateService.transactionsUpdated$.subscribe(accountId => {
+        if (accountId === this.selectedAccountId) {
+          this.loadTransactions(accountId);
+        }
+      })
+    );
+
+    // S'abonner aux mises à jour des comptes
+    this.subscriptions.add(
+      this.dataUpdateService.accountsUpdated$.subscribe(() => {
+        this.loadAccounts();
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   loadAccounts(): void {
     this.isLoading = true;
-    this.accountsService.getAccounts().subscribe({
-      next: (accounts) => {
-        this.accounts = accounts;
-        this.isLoading = false;
 
-        // Sélectionner automatiquement le premier compte
-        if (accounts.length > 0) {
-          this.selectedAccountId = accounts[0].id;
-          this.loadTransactions(this.selectedAccountId);
-        }
+    this.getAccountsUseCase.execute().subscribe({
+      next: () => {
+        this.accountStore.selectAccounts().subscribe(accounts => {
+          this.accounts = accounts;
+          this.isLoading = false;
+
+          // Sélectionner automatiquement le premier compte
+          if (accounts.length > 0 && !this.selectedAccountId) {
+            this.selectedAccountId = accounts[0].id;
+            this.loadTransactions(this.selectedAccountId);
+          }
+        });
       },
       error: (error) => {
         this.errorMessage = 'Impossible de charger vos comptes.';
@@ -54,10 +85,12 @@ export class TransactionHistoryComponent implements OnInit {
     this.isLoading = true;
     this.transactions = [];
 
-    this.transactionsService.getTransactionsByAccountId(accountId).subscribe({
+    this.getTransactionsUseCase.execute(accountId).subscribe({
       next: (transactions) => {
         this.transactions = transactions;
         this.isLoading = false;
+
+        console.log('Transactions loaded for account', accountId, ':', transactions);
       },
       error: (error) => {
         this.errorMessage = 'Impossible de charger l\'historique des transactions.';
@@ -74,24 +107,6 @@ export class TransactionHistoryComponent implements OnInit {
     this.selectedAccountId = accountId;
     this.loadTransactions(accountId);
   }
-
-
-  // getTransactionPartnerName(transaction: Transaction): string {
-  //   const partnerId = this.isIncoming(transaction)
-  //     ? transaction.emitterAccountId
-  //     : transaction.receiverAccountId;
-  //
-  //   if (!partnerId) {
-  //     return 'Compte inconnu';
-  //   }
-  //
-  //   const partnerAccount = this.accounts.find(account => account.id === partnerId);
-  //
-  //   return partnerAccount
-  //     ? `${partnerAccount.label}`
-  //     : `Compte ${partnerId.substring(0, 8)}...`;
-  // }
-
 
   formatDate(dateString: string | undefined | null): string {
     if (!dateString) {
@@ -112,105 +127,46 @@ export class TransactionHistoryComponent implements OnInit {
     });
   }
 
-  /**
-   * Détermine si une transaction est une entrée d'argent
-   */
-  isMoneyReceived(transaction: Transaction): boolean {
-    // Dans l'historique des transactions, on considère qu'une transaction est entrante
-    // si le compte sélectionné est le destinataire
+  getTransactionPartnerName(transaction: Transaction): string {
+    // Entrante = le partenaire est l'émetteur
+    if (transaction.receiverAccountId === this.selectedAccountId) {
+      if (transaction.emitterAccountId?.startsWith('ext-')) {
+        return `Externe (${transaction.emitterAccountId})`;
+      }
+
+      const partnerAccount = this.accounts.find(account => account.id === transaction.emitterAccountId);
+      return partnerAccount
+        ? partnerAccount.label
+        : `Compte ${transaction.emitterAccountId?.substring(0, 8) || 'inconnu'}...`;
+    }
+
+    // Sortante = le partenaire est le destinataire
+    if (transaction.receiverAccountId?.startsWith('ext-')) {
+      return `Externe (${transaction.receiverAccountId})`;
+    }
+
+    const partnerAccount = this.accounts.find(account => account.id === transaction.receiverAccountId);
+    return partnerAccount
+      ? partnerAccount.label
+      : `Compte ${transaction.receiverAccountId?.substring(0, 8) || 'inconnu'}...`;
+  }
+
+
+  formatAmount(amount: number): string {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+  }
+
+  // Vérifier si c'est une transaction entrante
+  isIncoming(transaction: Transaction): boolean {
     return transaction.receiverAccountId === this.selectedAccountId;
   }
 
+  // Pour afficher les infos de débogage
+  getTransactionDebugInfo(transaction: Transaction): string {
+    if (!this.showDebugInfo) return '';
 
-
-  isIncoming(transaction: any): boolean {
-    // Récupérer l'ID du compte sélectionné
-    const currentAccountId = this.selectedAccountId;
-
-    // Vérifier la structure appropriée - adaptée aux deux formats possibles
-    let receiverId;
-
-    // Format 1: transaction.receiver.id (structure imbriquée)
-    if (transaction.receiver && transaction.receiver.id) {
-      receiverId = transaction.receiver.id;
-    }
-    // Format 2: transaction.receiverAccountId (structure plate)
-    else if (transaction.receiverAccountId) {
-      receiverId = transaction.receiverAccountId;
-    }
-
-    // Une transaction est entrante si ce compte est le destinataire
-    return receiverId === currentAccountId;
+    return `ID: ${transaction.id} | De: ${transaction.emitterAccountId} | Vers: ${transaction.receiverAccountId}`;
   }
 
-  /**
-   * Détermine si une transaction est sortante avec la structure imbriquée
-   */
-  isOutgoing(transaction: any): boolean {
-    // Récupérer l'ID du compte sélectionné
-    const currentAccountId = this.selectedAccountId;
-
-    // Vérifier la structure appropriée - adaptée aux deux formats possibles
-    let emitterId;
-
-    // Format 1: transaction.emitter.id (structure imbriquée)
-    if (transaction.emitter && transaction.emitter.id) {
-      emitterId = transaction.emitter.id;
-    }
-    // Format 2: transaction.emitterAccountId (structure plate)
-    else if (transaction.emitterAccountId) {
-      emitterId = transaction.emitterAccountId;
-    }
-
-    // Une transaction est sortante si ce compte est l'émetteur
-    return emitterId === currentAccountId;
-  }
-
-  /**
-   * Obtient le nom du partenaire de transaction adapté à la structure imbriquée
-   */
-  getTransactionPartnerName(transaction: any): string {
-    // Si c'est une transaction entrante, le partenaire est l'émetteur
-    if (this.isIncoming(transaction)) {
-      // Format 1: structure imbriquée
-      if (transaction.emitter && transaction.emitter.owner) {
-        return transaction.emitter.owner.name || `Compte ${transaction.emitter.id?.substring(0, 8)}...`;
-      }
-      // Format 2: structure plate
-      else if (transaction.emitterAccountId) {
-        const partnerAccount = this.accounts.find(account => account.id === transaction.emitterAccountId);
-        return partnerAccount?.label || `Compte ${transaction.emitterAccountId?.substring(0, 8)}...`;
-      }
-    }
-    // Si c'est une transaction sortante, le partenaire est le destinataire
-    else {
-      // Format 1: structure imbriquée
-      if (transaction.receiver && transaction.receiver.owner) {
-        return transaction.receiver.owner.name || `Compte ${transaction.receiver.id?.substring(0, 8)}...`;
-      }
-      // Format 2: structure plate
-      else if (transaction.receiverAccountId) {
-        const partnerAccount = this.accounts.find(account => account.id === transaction.receiverAccountId);
-        return partnerAccount?.label || `Compte ${transaction.receiverAccountId?.substring(0, 8)}...`;
-      }
-    }
-
-    return 'Compte inconnu';
-  }
-
-  /**
-   * Formate un montant avec le signe approprié
-   */
-  formatAmount(amount: number, showSign: boolean = false): string {
-    const formatter = new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      signDisplay: showSign ? 'always' : 'auto'
-    });
-
-    return formatter.format(amount);
-  }
-
-// Ajoutez cette propriété pour utiliser Math dans le template
   protected readonly Math = Math;
 }

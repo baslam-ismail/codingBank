@@ -1,10 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+// src/app/features/auth/pages/login/login.component.ts
+import {Component, OnInit, inject, Inject, PLATFORM_ID} from '@angular/core';
+import {CommonModule, isPlatformBrowser} from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../../core/authentication/auth.service';
+import { LoginUseCase } from '../../../../usecases';
 import { NumericKeypadComponent } from '../../components/numeric-keypad/numeric-keypad.component';
 import { DigitsOnlyDirective } from '../../../../shared/directives/digits-only.directive';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -24,12 +26,15 @@ export class LoginComponent implements OnInit {
   errorMessage: string | null = null;
   isLoading = false;
   passwordVisible = false;
+  isDemoMode = environment.demo;
 
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
-  private router = inject(Router);
-
-  constructor() {
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private loginUseCase: LoginUseCase,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    // Déplacer l'initialisation du formulaire ici
     this.loginForm = this.fb.group({
       clientCode: ['', [
         Validators.required,
@@ -40,12 +45,22 @@ export class LoginComponent implements OnInit {
         Validators.pattern('^[0-9]{6}$')
       ]]
     });
+
+    // Pré-remplir uniquement côté client
+    if (isPlatformBrowser(this.platformId) && this.isDemoMode) {
+      this.loginForm.patchValue({
+        clientCode: '12345678'
+      });
+    }
   }
 
   ngOnInit(): void {
-    // Si déjà connecté, rediriger vers la page d'accueil
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/home']);
+    // Vérifier si on est dans le navigateur avant d'accéder à localStorage
+    if (isPlatformBrowser(this.platformId)) {
+      // Redirection si déjà connecté
+      if (localStorage.getItem('jwt_token')) {
+        this.router.navigate(['/home']);
+      }
     }
   }
 
@@ -60,7 +75,7 @@ export class LoginComponent implements OnInit {
 
     const { clientCode, password } = this.loginForm.value;
 
-    this.authService.login(clientCode, password).subscribe({
+    this.loginUseCase.execute(clientCode, password).subscribe({
       next: () => {
         this.isLoading = false;
         this.router.navigate(['/home']);
@@ -87,6 +102,10 @@ export class LoginComponent implements OnInit {
     this.passwordVisible = !this.passwordVisible;
   }
 
+  resetPassword(): void {
+    this.loginForm.patchValue({ password: '' });
+  }
+
   private markFormGroupTouched(formGroup: FormGroup): void {
     Object.values(formGroup.controls).forEach(control => {
       control.markAsTouched();
@@ -104,9 +123,5 @@ export class LoginComponent implements OnInit {
   get passwordInvalid(): boolean {
     const control = this.loginForm.get('password');
     return !!control && control.invalid && control.touched;
-  }
-
-  resetPassword() {
-
   }
 }

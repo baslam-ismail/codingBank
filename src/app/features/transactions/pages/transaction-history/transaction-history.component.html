@@ -103,6 +103,30 @@
       </ul>
     </div>
 
+
+
+    <div class="px-4 py-3 mb-6 bg-yellow-50 border-l-4 border-yellow-400 rounded" *ngIf="showDebugInfo">
+      <h3 class="text-yellow-800 font-medium">Mode démonstration - Historique des transactions</h3>
+      <p class="mt-2 text-sm text-yellow-700">
+        Vous êtes en mode démo. Voici les ID des comptes disponibles:
+      </p>
+      <ul class="mt-2 list-disc pl-5 text-sm text-yellow-700">
+        <li *ngFor="let account of accounts">
+          <strong>{{ account.label }}</strong>: ID = {{ account.id }},
+          Solde = {{ formatAmount(account.balance) }}
+        </li>
+      </ul>
+    </div>
+    <!-- Dans la liste des transactions, ajouter l'info de débogage -->
+    <li *ngFor="let transaction of transactions" class="px-4 py-4 sm:px-6">
+      <div class="flex items-center justify-between">
+        <!-- ... reste du code inchangé ... -->
+      </div>
+      <div *ngIf="showDebugInfo" class="mt-2 text-xs text-gray-500">
+        {{ getTransactionDebugInfo(transaction) }}
+      </div>
+    </li>
+
     <!-- Message si aucune transaction -->
     <div *ngIf="!isLoading && !errorMessage && transactions.length === 0 && selectedAccountId" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
       <div class="flex">

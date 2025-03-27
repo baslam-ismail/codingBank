@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { AuthService } from './core/authentication/auth.service';
 import { LogoutButtonComponent } from './shared/components/logout-button/logout-button.component';
+import { environment } from '../environments/environment';
+import { User } from './models/user.model';
 
 @Component({
   selector: 'app-root',
@@ -21,6 +23,8 @@ import { LogoutButtonComponent } from './shared/components/logout-button/logout-
 export class AppComponent {
   title = 'CodingBank';
   showHeader = false;
+  isDemoMode = environment.demo;
+  currentUser: User | null = null;
 
   private router = inject(Router);
   private authService = inject(AuthService);

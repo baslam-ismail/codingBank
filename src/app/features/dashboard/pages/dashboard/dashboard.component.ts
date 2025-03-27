@@ -5,12 +5,10 @@ import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Account } from '../../../../models/account.model';
 import { AccountSummaryComponent } from '../../components/account-summary/account-summary.component';
-
-// Import du service de mise à jour
 import { DataUpdateService } from '../../../../core/services/data-update.service';
 import { AccountStore } from '../../../../store';
-import { GetAccountsUseCase } from '../../../../usecases';
-import { GetAccountDetailsUseCase } from '../../../../usecases';
+import { GetAccountsUseCase, GetAccountDetailsUseCase } from '../../../../usecases';
+// import {AccountActivityComponent} from '../../../accounts/components/account-activity/account-activity.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,6 +16,7 @@ import { GetAccountDetailsUseCase } from '../../../../usecases';
   imports: [
     CommonModule,
     RouterLink,
+    // AccountActivityComponent,
     // AccountSummaryComponent
   ],
   templateUrl: './dashboard.component.html',
@@ -31,8 +30,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   totalBalance = 0;
 
   private subscriptions = new Subscription();
-
-  // Injection des dépendances
   private accountStore = inject(AccountStore);
   private getAccountsUseCase = inject(GetAccountsUseCase);
   private getAccountDetailsUseCase = inject(GetAccountDetailsUseCase);
@@ -78,15 +75,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Se désabonner pour éviter les fuites de mémoire
     this.subscriptions.unsubscribe();
   }
 
   loadAccounts(): void {
     this.getAccountsUseCase.execute().subscribe({
       next: () => {
-        // Les données sont mises à jour dans le store
         console.log('Comptes chargés avec succès');
+        // Si aucun compte n'est sélectionné et qu'il y a des comptes disponibles,
+        // sélectionner le premier compte
+        const accounts = this.accountStore.getState().accounts;
+        if (!this.selectedAccount && accounts.length > 0) {
+          this.selectAccount(accounts[0].id);
+        }
       },
       error: (err) => {
         console.error('Erreur lors du chargement des comptes', err);
@@ -94,11 +95,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Nouvelle méthode pour sélectionner un compte
   selectAccount(accountId: string): void {
     this.getAccountDetailsUseCase.execute(accountId).subscribe({
       next: () => {
-        // Le compte sélectionné est mis à jour dans le store
         console.log('Compte sélectionné:', accountId);
       },
       error: (err) => {
@@ -111,7 +110,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.totalBalance = this.accounts.reduce((total, account) => total + account.balance, 0);
   }
 
-  // Formatage d'un montant pour l'affichage
   formatAmount(amount: number): string {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
   }
@@ -129,6 +127,5 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Propriété pour utiliser Math dans le template
   protected readonly Math = Math;
 }

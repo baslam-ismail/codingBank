@@ -1,3 +1,5 @@
+// src/app/usecases/transaction/create-transaction.usecase.ts
+
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { tap, finalize } from 'rxjs/operators';
@@ -24,12 +26,7 @@ export class CreateTransactionUseCase {
           console.log('Transaction créée avec succès:', response);
 
           // Notifier que les comptes et transactions doivent être mis à jour
-          this.dataUpdateService.notifyAccountsUpdated();
-          this.dataUpdateService.notifyTransactionsUpdated(transaction.emitterAccountId);
-          if (transaction.receiverAccountId !== transaction.emitterAccountId) {
-            this.dataUpdateService.notifyTransactionsUpdated(transaction.receiverAccountId);
-          }
-
+          this.notifyDataChanged(transaction);
           this.transactionStore.setError(null);
         },
         error: (error) => {
@@ -42,5 +39,14 @@ export class CreateTransactionUseCase {
         this.transactionStore.setLoading(false);
       })
     );
+  }
+
+  private notifyDataChanged(transaction: CreateTransactionRequest): void {
+    // Notifier que les comptes et transactions doivent être mis à jour
+    this.dataUpdateService.notifyAccountsUpdated();
+    this.dataUpdateService.notifyTransactionsUpdated(transaction.emitterAccountId);
+    if (transaction.receiverAccountId !== transaction.emitterAccountId) {
+      this.dataUpdateService.notifyTransactionsUpdated(transaction.receiverAccountId);
+    }
   }
 }

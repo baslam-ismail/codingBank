@@ -1,18 +1,21 @@
-import { Component, OnInit } from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../../../../core/authentication/auth.service';
-import {NumericKeypadComponent} from '../../components/numeric-keypad/numeric-keypad.component';
-import {CommonModule} from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { RegisterUseCase } from '../../../../usecases/auth/register.usecase';
+import { NumericKeypadComponent } from '../../components/numeric-keypad/numeric-keypad.component';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-register',
-  templateUrl: './register.component.html',
+  standalone: true,
   imports: [
+    CommonModule,
     ReactiveFormsModule,
-    NumericKeypadComponent,
-    CommonModule
+    RouterLink,
+    NumericKeypadComponent
   ],
+  templateUrl: './register.component.html',
   styleUrls: ['./register.component.scss']
 })
 export class RegisterComponent implements OnInit {
@@ -20,12 +23,13 @@ export class RegisterComponent implements OnInit {
   errorMessage: string | null = null;
   isLoading = false;
   passwordVisible = false;
+  isDemoMode = environment.demo;
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router
-  ) {
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private registerUseCase = inject(RegisterUseCase);
+
+  constructor() {
     this.registerForm = this.fb.group({
       name: ['', [
         Validators.required,
@@ -37,11 +41,18 @@ export class RegisterComponent implements OnInit {
         Validators.pattern('^[0-9]{6}$')
       ]]
     });
+
+    // Pré-remplir avec un nom pour la démo
+    if (this.isDemoMode) {
+      this.registerForm.patchValue({
+        name: 'Utilisateur Test'
+      });
+    }
   }
 
   ngOnInit(): void {
-    // Si déjà connecté, rediriger vers la page d'accueil
-    if (this.authService.isAuthenticated()) {
+    // Redirection si déjà connecté
+    if (localStorage.getItem('jwt_token')) {
       this.router.navigate(['/home']);
     }
   }
@@ -57,10 +68,9 @@ export class RegisterComponent implements OnInit {
 
     const { name, password } = this.registerForm.value;
 
-    this.authService.register(name, password).subscribe({
-      next: (response) => {
+    this.registerUseCase.execute(name, password).subscribe({
+      next: () => {
         this.isLoading = false;
-        // Rediriger vers la page d'accueil après inscription réussie
         this.router.navigate(['/home']);
       },
       error: (error) => {
@@ -85,6 +95,10 @@ export class RegisterComponent implements OnInit {
     this.passwordVisible = !this.passwordVisible;
   }
 
+  resetPassword(): void {
+    this.registerForm.patchValue({ password: '' });
+  }
+
   private markFormGroupTouched(formGroup: FormGroup): void {
     Object.values(formGroup.controls).forEach(control => {
       control.markAsTouched();
@@ -94,6 +108,7 @@ export class RegisterComponent implements OnInit {
     });
   }
 
+
   get nameInvalid(): boolean {
     const control = this.registerForm.get('name');
     return !!control && control.invalid && control.touched;
@@ -101,10 +116,6 @@ export class RegisterComponent implements OnInit {
 
   get passwordInvalid(): boolean {
     const control = this.registerForm.get('password');
-    return !!control && control.invalid && control.touched && control.dirty && control.value.length > 0;
-  }
-
-  resetPassword() {
-
+    return !!control && control.invalid && control.touched;
   }
 }

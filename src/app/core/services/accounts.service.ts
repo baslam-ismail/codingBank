@@ -1,10 +1,12 @@
 // src/app/core/services/accounts.service.ts
+
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, delay, map, tap } from 'rxjs/operators';
 import { Account } from '../../models/account.model';
 import { environment } from '../../../environments/environment';
+import { DemoDataService } from './demo-data.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,12 +14,17 @@ import { environment } from '../../../environments/environment';
 export class AccountsService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiUrl;
+  private demoDataService = inject(DemoDataService);
 
   // Récupérer tous les comptes de l'utilisateur
   getAccounts(): Observable<Account[]> {
-    // Si en mode démo, retourner directement des données mockées
+    // Si en mode démo, retourner directement les données mockées
     if (environment.demo) {
-      return of(this.getMockAccounts());
+      console.log('Using demo accounts data');
+      return this.demoDataService.getAccounts().pipe(
+        tap(accounts => console.log('Demo accounts:', accounts)),
+        delay(800) // Simuler un délai réseau
+      );
     }
 
     // Sinon, faire une requête au backend réel
@@ -25,8 +32,8 @@ export class AccountsService {
       map(accounts => accounts.map(account => this.mapApiAccountToModel(account))),
       catchError(error => {
         console.error('Error fetching accounts', error);
-        // En cas d'erreur, retourner quand même des données mockées
-        return of(this.getMockAccounts());
+        // En cas d'erreur, retourner des données mockées
+        return this.demoDataService.getAccounts();
       })
     );
   }
@@ -35,8 +42,11 @@ export class AccountsService {
   getAccountById(id: string): Observable<Account | null> {
     // Si en mode démo, rechercher dans les données mockées
     if (environment.demo) {
-      const account = this.getMockAccounts().find(account => account.id === id);
-      return of(account || null);
+      const account = this.demoDataService.getAccountById(id);
+      return of(account).pipe(
+        tap(account => console.log('Demo account by ID:', account)),
+        delay(600) // Simuler un délai réseau
+      );
     }
 
     // Sinon, faire une requête au backend réel
@@ -45,8 +55,7 @@ export class AccountsService {
       catchError(error => {
         console.error(`Error fetching account ${id}`, error);
         // En cas d'erreur, rechercher dans les données mockées
-        const mockAccount = this.getMockAccounts().find(account => account.id === id);
-        return of(mockAccount || null);
+        return of(this.demoDataService.getAccountById(id));
       })
     );
   }
@@ -60,48 +69,9 @@ export class AccountsService {
       createdAt: apiAccount.openAt || apiAccount.createdAt,
       updatedAt: apiAccount.updatedAt || apiAccount.openAt,
       userId: apiAccount.ownerId,
-      accountNumber: apiAccount.id, // Utiliser l'ID comme numéro de compte
+      accountNumber: apiAccount.accountNumber || apiAccount.id,
       type: apiAccount.type || 'CHECKING',
       currency: apiAccount.currency || 'EUR'
     };
-  }
-
-  // Données mockées pour le développement et le mode démo
-  private getMockAccounts(): Account[] {
-    return [
-      {
-        id: 'acc-12345678',
-        label: 'Compte Courant',
-        balance: 1250.75,
-        createdAt: new Date(2023, 0, 15).toISOString(),
-        updatedAt: new Date(2023, 5, 10).toISOString(),
-        userId: 'user-123',
-        accountNumber: 'acc-12345678',
-        type: 'CHECKING',
-        currency: 'EUR'
-      },
-      {
-        id: 'acc-87654321',
-        label: 'Livret A',
-        balance: 5680.42,
-        createdAt: new Date(2023, 1, 20).toISOString(),
-        updatedAt: new Date(2023, 5, 1).toISOString(),
-        userId: 'user-123',
-        accountNumber: 'acc-87654321',
-        type: 'SAVINGS',
-        currency: 'EUR'
-      },
-      {
-        id: 'acc-11223344',
-        label: 'Plan Épargne Logement',
-        balance: 15000,
-        createdAt: new Date(2022, 10, 5).toISOString(),
-        updatedAt: new Date(2023, 4, 15).toISOString(),
-        userId: 'user-123',
-        accountNumber: 'acc-11223344',
-        type: 'TERM_DEPOSIT',
-        currency: 'EUR'
-      }
-    ];
   }
 }

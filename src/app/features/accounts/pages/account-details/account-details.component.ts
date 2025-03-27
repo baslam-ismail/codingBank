@@ -6,6 +6,7 @@ import { AccountsService } from '../../../../core/services/accounts.service';
 import { TransactionsService } from '../../../../core/services/transactions.service';
 import { Account } from '../../../../models/account.model';
 import { Transaction } from '../../../../models/transaction.model';
+// import {AccountActivityComponent} from '../../components/account-activity/account-activity.component';
 
 @Component({
   selector: 'app-account-details',

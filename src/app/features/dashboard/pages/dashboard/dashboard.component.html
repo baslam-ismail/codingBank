@@ -135,6 +135,9 @@
       </div>
     </div>
 
+    <div class="mt-6" *ngIf="selectedAccount">
+<!--      <app-account-activity [account]="selectedAccount"></app-account-activity>-->
+    </div>
     <!-- Message si aucun compte -->
     <div *ngIf="!isLoading && !error && accounts.length === 0" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
       <div class="flex">
