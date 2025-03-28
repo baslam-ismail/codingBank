@@ -40,6 +40,9 @@ export class AccountActivityComponent implements OnInit, OnDestroy {
   private transactionStore = inject(TransactionStore);
   private cdr = inject(ChangeDetectorRef);
 
+
+
+
   ngOnInit(): void {
     if (this.account && this.account.id) {
       console.log(`AccountActivity: Initializing for account ${this.account.id}`);
@@ -152,6 +155,8 @@ export class AccountActivityComponent implements OnInit, OnDestroy {
     return result;
   }
 
+
+
   /**
    * Obtient le nom du partenaire de la transaction (émetteur ou destinataire)
    */
@@ -252,6 +257,8 @@ export class AccountActivityComponent implements OnInit, OnDestroy {
   getTransactionClass(transaction: Transaction): string {
     return this.isIncoming(transaction) ? 'transaction-incoming' : 'transaction-outgoing';
   }
+
+
 
   protected readonly Math = Math;
 }

@@ -21,6 +21,15 @@ export class TransactionStore {
     return this.state.asObservable();
   }
 
+  resetState(): void {
+    console.log('TransactionStore: Resetting state completely');
+    this.state.next({
+      transactions: [],
+      loading: false,
+      error: null
+    });
+  }
+
   selectTransactions(): Observable<Transaction[]> {
     return this.state$.pipe(map(state => {
       console.log('TransactionStore: Returning all transactions:', state.transactions);
@@ -98,9 +107,7 @@ export class TransactionStore {
     });
   }
 
-  resetState(): void {
-    this.state.next(initialState);
-  }
+
 
   // Méthode utilitaire pour obtenir l'état actuel
   getState(): TransactionsState {

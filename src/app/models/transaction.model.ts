@@ -1,11 +1,15 @@
+// src/app/models/transaction.model.ts
+// Modèles alignés sur les schémas d'API fournis
+
+/**
+ * Interface pour les transactions reçues de l'API
+ */
 export interface TransactionAccount {
   id: string;
   owner?: {
     name: string;
   };
 }
-
-// Structure de transaction reçue de l'API
 export interface Transaction {
   id: string;
   amount: number;
@@ -15,40 +19,38 @@ export interface Transaction {
   emittedAt?: string;
   updatedAt?: string;
 
-  // Soit la structure imbriquée (format 1)
   emitter?: TransactionAccount;
   receiver?: TransactionAccount;
 
-  // Soit la structure plate (format 2 - pour compatibilité)
-  emitterAccountId?: string;
-  receiverAccountId?: string;
+  // Identifiants des comptes (format UUID)
+  emitterAccountId: string;
+  receiverAccountId: string;
 
   // Autres champs possibles
   status?: string;
 }
 
-// Demande de création de transaction
+/**
+ * Interface pour l'émission d'une transaction (alignée avec EmitTransactionDTO)
+ */
 export interface CreateTransactionRequest {
-  emitterAccountId: string;
-  receiverAccountId: string;
-  amount: number;
-  description: string;
+  emitterAccountId: string;    // UUID du compte émetteur
+  receiverAccountId: string;   // UUID du compte destinataire ou identifiant externe
+  amount: number;              // Montant de la transaction
+  description: string;         // Description de la transaction
 }
 
-// Réponse après création d'une transaction
+/**
+ * Interface pour la réponse après création d'une transaction
+ */
 export interface TransactionResponse {
-  id: string;
-  amount: number;
-  description: string;
-  emittedAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-
-
-  emitter?: TransactionAccount;
-  receiver?: TransactionAccount;
-  emitterAccountId?: string;
-  receiverAccountId?: string;
-
-  status?: string;
+  id: string;                // UUID de la transaction
+  amount: number;            // Montant
+  description: string;       // Description
+  emittedAt?: string;        // Date d'émission
+  createdAt?: string;        // Date de création
+  updatedAt?: string;        // Date de mise à jour
+  emitterAccountId: string;  // UUID du compte émetteur
+  receiverAccountId: string; // UUID du compte destinataire
+  status?: string;           // Statut de la transaction
 }
