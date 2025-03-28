@@ -1,5 +1,3 @@
-// src/app/features/transactions/pages/transaction-history/transaction-history.component.ts
-
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -10,11 +8,16 @@ import { GetTransactionsUseCase, GetAccountsUseCase } from '../../../../usecases
 import { AccountStore, TransactionStore } from '../../../../store';
 import { DataUpdateService } from '../../../../core/services/data-update.service';
 import { environment } from '../../../../../environments/environment';
+import { CopyButtonComponent } from '../../../../shared/components/copy-button/copy-button.component';
 
 @Component({
   selector: 'app-transaction-history',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    CommonModule,
+    RouterLink,
+    CopyButtonComponent
+  ],
   templateUrl: './transaction-history.component.html',
 })
 export class TransactionHistoryComponent implements OnInit, OnDestroy {
@@ -85,7 +88,7 @@ export class TransactionHistoryComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.transactions = [];
 
-    this.getTransactionsUseCase.execute(accountId).subscribe({
+    this.getTransactionsUseCase.executeForAccount(accountId).subscribe({
       next: (transactions) => {
         this.transactions = transactions;
         this.isLoading = false;
@@ -93,7 +96,7 @@ export class TransactionHistoryComponent implements OnInit, OnDestroy {
         console.log('Transactions loaded for account', accountId, ':', transactions);
       },
       error: (error) => {
-        this.errorMessage = 'Impossible de charger l\'historique des transactions.';
+        this.errorMessage = "Impossible de charger l\'historique des transactions.";
         this.isLoading = false;
         console.error('Error loading transactions', error);
       }
@@ -151,7 +154,6 @@ export class TransactionHistoryComponent implements OnInit, OnDestroy {
       : `Compte ${transaction.receiverAccountId?.substring(0, 8) || 'inconnu'}...`;
   }
 
-
   formatAmount(amount: number): string {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
   }
@@ -159,13 +161,6 @@ export class TransactionHistoryComponent implements OnInit, OnDestroy {
   // Vérifier si c'est une transaction entrante
   isIncoming(transaction: Transaction): boolean {
     return transaction.receiverAccountId === this.selectedAccountId;
-  }
-
-  // Pour afficher les infos de débogage
-  getTransactionDebugInfo(transaction: Transaction): string {
-    if (!this.showDebugInfo) return '';
-
-    return `ID: ${transaction.id} | De: ${transaction.emitterAccountId} | Vers: ${transaction.receiverAccountId}`;
   }
 
   protected readonly Math = Math;

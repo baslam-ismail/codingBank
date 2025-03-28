@@ -1,4 +1,3 @@
-// src/app/shared/directives/digits-only.directive.ts
 import { Directive, ElementRef, HostListener } from '@angular/core';
 
 @Directive({
@@ -16,7 +15,7 @@ export class DigitsOnlyDirective {
 
     if (value !== sanitized) {
       input.value = sanitized;
-      // Créer un événement d'input personnalisé pour déclencher la mise à jour du formulaire
+
       const customEvent = new Event('input', { bubbles: true });
       input.dispatchEvent(customEvent);
     }

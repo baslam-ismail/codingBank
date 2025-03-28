@@ -1,0 +1,142 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <!-- Retour à l'historique -->
+    <div class="mb-6">
+      <a routerLink="/transactions/history" class="text-indigo-600 hover:text-indigo-800 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Retour à l'historique
+      </a>
+    </div>
+
+    <!-- Titre de la page -->
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-gray-900">Détails de la transaction</h1>
+      <p class="mt-1 text-sm text-gray-500">Identifiant: {{ transaction?.id || 'Chargement...' }}</p>
+    </div>
+
+    <!-- Loader pendant le chargement -->
+    <div *ngIf="isLoading" class="flex justify-center py-8">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-red-700">{{ error }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Détails de la transaction -->
+    <div *ngIf="transaction && !isLoading" class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+        <div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900">
+            {{ transaction.description || 'Détails de la transaction' }}
+          </h3>
+          <p class="mt-1 max-w-2xl text-sm text-gray-500">
+            {{ formatDate(transaction.emittedAt || transaction.createdAt) }}
+          </p>
+        </div>
+
+        <!-- Statut de la transaction -->
+        <div class="px-3 py-1 rounded-full text-sm font-semibold"
+             [ngClass]="{
+              'bg-green-100 text-green-800': transaction.status === 'COMPLETED',
+              'bg-yellow-100 text-yellow-800': transaction.status === 'PENDING',
+              'bg-red-100 text-red-800': transaction.status === 'FAILED',
+              'bg-gray-100 text-gray-800': !transaction.status
+             }">
+          {{ getStatusLabel(transaction.status) }}
+        </div>
+      </div>
+
+      <div class="border-t border-gray-200">
+        <dl>
+          <!-- Montant -->
+          <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Montant</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+              <span [ngClass]="{
+                'font-bold': true,
+                'text-green-600': isIncoming(),
+                'text-red-600': !isIncoming()
+              }">
+                {{ formatAmount() }}
+              </span>
+            </dd>
+          </div>
+
+          <!-- Émetteur -->
+          <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Émetteur</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 flex items-center">
+              <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-3">
+                <span class="text-sm font-bold">{{ getEmitterInitials() }}</span>
+              </div>
+              <div>
+                <p class="font-medium">{{ getEmitterName() }}</p>
+                <p class="text-xs text-gray-500">ID: {{ transaction.emitterAccountId }}</p>
+              </div>
+            </dd>
+          </div>
+
+          <!-- Destinataire -->
+          <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Destinataire</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 flex items-center">
+              <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-3">
+                <span class="text-sm font-bold">{{ getReceiverInitials() }}</span>
+              </div>
+              <div>
+                <p class="font-medium">{{ getReceiverName() }}</p>
+                <p class="text-xs text-gray-500">ID: {{ transaction.receiverAccountId }}</p>
+              </div>
+            </dd>
+          </div>
+
+          <!-- Description -->
+          <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Description</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+              {{ transaction.description || 'Aucune description' }}
+            </dd>
+          </div>
+
+          <!-- Date de création -->
+          <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Date de création</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+              {{ formatDate(transaction.emittedAt || transaction.createdAt) }}
+            </dd>
+          </div>
+
+          <!-- Date de mise à jour (si différente) -->
+          <div *ngIf="transaction.updatedAt && transaction.updatedAt !== transaction.createdAt"
+               class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Dernière mise à jour</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+              {{ formatDate(transaction.updatedAt) }}
+            </dd>
+          </div>
+
+          <!-- ID de la transaction -->
+          <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Identifiant de transaction</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+              {{ transaction.id }}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>

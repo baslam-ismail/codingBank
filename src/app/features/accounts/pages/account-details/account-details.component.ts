@@ -6,11 +6,18 @@ import { Account } from '../../../../models/account.model';
 import { AccountActivityComponent } from '../../components/account-activity/account-activity.component';
 import { GetAccountDetailsUseCase } from '../../../../usecases';
 import { AccountStore } from '../../../../store';
+import { CopyButtonComponent } from '../../../../shared/components/copy-button/copy-button.component';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-account-details',
   standalone: true,
-  imports: [CommonModule, RouterLink, AccountActivityComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    AccountActivityComponent,
+    CopyButtonComponent
+  ],
   templateUrl: './account-details.component.html',
   styles: []
 })
@@ -18,6 +25,7 @@ export class AccountDetailsComponent implements OnInit, OnDestroy {
   account: Account | null = null;
   isLoading = true;
   error: string | null = null;
+  showDebugInfo = environment.demo;
 
   private subscriptions = new Subscription();
   private accountId: string | null = null;

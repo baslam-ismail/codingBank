@@ -1,0 +1,24 @@
+
+:host {
+  display: block;
+}
+
+// Styles pour les transactions entrantes
+.transaction-incoming {
+  border-left: 3px solid rgba(16, 185, 129, 0.7);
+}
+
+// Styles pour les transactions sortantes
+.transaction-outgoing {
+  border-left: 3px solid rgba(239, 68, 68, 0.7);
+}
+
+// Animation subtile pour les transactions
+li {
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+}

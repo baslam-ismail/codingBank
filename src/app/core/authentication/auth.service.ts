@@ -1,4 +1,3 @@
-// src/app/core/authentication/auth.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
@@ -47,7 +46,6 @@ export class AuthService {
   }
 
   constructor() {
-    // Charger l'utilisateur depuis le localStorage au démarrage
     this.loadStoredUser();
   }
 
@@ -58,10 +56,6 @@ export class AuthService {
         if (storedUser) {
           const user = JSON.parse(storedUser);
           this.currentUserSubject.next(user);
-
-          // IMPORTANT: Ne pas définir l'utilisateur dans DemoDataService ici
-          // car DemoDataService se charge déjà de restaurer ses données
-          // depuis le localStorage
         }
       }
     } catch (e) {
@@ -70,12 +64,10 @@ export class AuthService {
   }
 
   login(clientCode: string, password: string): Observable<any> {
-    // Si en mode démo, simuler un login
     if (environment.demo) {
       return this.loginDemo(clientCode, password);
     }
 
-    // Sinon, requête au backend
     return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, { clientCode, password })
       .pipe(
         tap(response => {
@@ -89,12 +81,11 @@ export class AuthService {
   }
 
   private loginDemo(clientCode: string, password: string): Observable<any> {
-    // Pour la démo, accepter simplement un couple clientCode/password prédéfini
+
     const validCredentials = [
       { clientCode: '12345678', password: '123456', name: 'Utilisateur Démo' }
     ];
 
-    // Vérifier si les identifiants correspondent à un utilisateur existant
     const matchedUser = validCredentials.find(
       cred => cred.clientCode === clientCode && cred.password === password
     );
@@ -109,20 +100,17 @@ export class AuthService {
       };
 
       return of(loginResponse).pipe(
-        delay(800), // Simuler un délai réseau
+        delay(800),
         tap(response => {
           this.storeUserData(response);
-          // Définir l'utilisateur dans le DemoDataService
           this.demoDataService.setCurrentUser(response.user);
         })
       );
     } else {
-      // Vérifier si c'est un utilisateur créé précédemment
-      // Cette partie est simplifiée car nous n'avons pas de véritable base de données utilisateur
-      // En production, vous feriez une vraie vérification d'authentification
+
 
       if (clientCode.length === 8 && password === '123456') {
-        // Créer une réponse pour un utilisateur existant non prédéfini
+
         const loginResponse: LoginResponse = {
           jwt: 'demo-token-' + Date.now(),
           user: {
@@ -132,11 +120,10 @@ export class AuthService {
         };
 
         return of(loginResponse).pipe(
-          delay(800), // Simuler un délai réseau
+          delay(800),
           tap(response => {
             this.storeUserData(response);
-            // Définir l'utilisateur dans le DemoDataService
-            // Cela va charger ses données existantes du localStorage
+
             this.demoDataService.setCurrentUser(response.user);
           })
         );
@@ -149,12 +136,11 @@ export class AuthService {
   register(name: string, password: string): Observable<any> {
     const registerData: RegisterRequest = { name, password };
 
-    // Si en mode démo, simuler une inscription
+
     if (environment.demo) {
       return this.registerDemo(name, password);
     }
 
-    // URL corrigée pour l'inscription
     return this.http.post<LoginResponse>(`${this.apiUrl}/auth/register`, registerData)
       .pipe(
         tap(response => {
@@ -179,22 +165,22 @@ export class AuthService {
 
     this.clearPreviousUserData();
 
-    // Générer un code client unique
+
     const clientCode = Math.floor(10000000 + Math.random() * 90000000).toString();
 
-    // Créer le nouvel utilisateur
+
     const newUser: User = {
       clientCode: clientCode,
       name: name
     };
 
-    // Créer la réponse de login
+
     const demoResponse: LoginResponse = {
       jwt: 'demo-token-' + Math.random().toString(36).substring(2, 10),
       user: newUser
     };
 
-    // IMPORTANT: Créer de nouveaux comptes pour l'utilisateur
+
     const newAccounts: Account[] = [
       {
         id: 'acc-checking-' + clientCode,
@@ -220,8 +206,6 @@ export class AuthService {
       }
     ];
 
-    // Créer les structures de stockage dans le localStorage
-    // Récupérer et mettre à jour les comptes
     let allAccounts = [];
     try {
       const stored = localStorage.getItem('demo_user_accounts');
@@ -232,10 +216,10 @@ export class AuthService {
       console.error('Error parsing accounts', e);
     }
 
-    // Ajouter les nouveaux comptes
+
     allAccounts[clientCode] = newAccounts;
 
-    // Initialiser les transactions
+
     let allTransactions = [];
     try {
       const stored = localStorage.getItem('demo_user_transactions');
@@ -246,10 +230,10 @@ export class AuthService {
       console.error('Error parsing transactions', e);
     }
 
-    // Ajouter un tableau vide pour les transactions
+
     allTransactions[clientCode] = [];
 
-    // Sauvegarder dans localStorage
+
     localStorage.setItem('demo_user_accounts', JSON.stringify(allAccounts));
     localStorage.setItem('demo_user_transactions', JSON.stringify(allTransactions));
     localStorage.setItem('demo_current_user', JSON.stringify(newUser));
@@ -257,12 +241,11 @@ export class AuthService {
     localStorage.setItem(this.USER_KEY, JSON.stringify(newUser));
 
     return of(demoResponse).pipe(
-      delay(1000), // Simuler un délai réseau
+      delay(1000),
       tap(response => {
         this.currentUserSubject.next(newUser);
 
-        // Forcer un rafraîchissement complet de la page
-        // C'est la solution la plus simple et la plus fiable
+
         window.location.href = '/home';
       })
     );
@@ -270,8 +253,6 @@ export class AuthService {
 
   logout(): void {
     if (typeof window !== 'undefined' && window.localStorage) {
-      // Garder les données démo dans localStorage pour la persistance
-      // mais supprimer les tokens d'authentification
       localStorage.removeItem(this.TOKEN_KEY);
       localStorage.removeItem(this.USER_KEY);
     }
@@ -287,7 +268,7 @@ export class AuthService {
 
   getToken(): string | null {
     try {
-      // Vérifier si on est dans un navigateur
+
       if (typeof window !== 'undefined' && window.localStorage) {
         const token = localStorage.getItem(this.TOKEN_KEY);
         if (!token || token === 'undefined' || token === 'null') {
@@ -295,7 +276,6 @@ export class AuthService {
         }
         return token;
       }
-      // Si on n'est pas dans un navigateur (SSR)
       return null;
     } catch (e) {
       console.error('Error accessing token', e);

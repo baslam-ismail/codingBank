@@ -1,4 +1,3 @@
-// Modifications pour src/app/features/auth/components/numeric-keypad/numeric-keypad.component.ts
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -18,22 +17,50 @@ export class NumericKeypadComponent implements OnInit {
   keys: (string | number)[][] = [];
 
   ngOnInit(): void {
-    this.generateKeys();
+    this.generateRandomKeys();
   }
 
-  private generateKeys(): void {
-    // Arrange digits 0-9 and actions
-    this.keys = [
-      [1, 2, 3],
-      [4, 5, 6],
-      [7, 8, 9],
-      ['', 0, 'X']
-    ];
+  private generateRandomKeys(): void {
+    // Créer un array de 0-9
+    const digits = Array.from({ length: 10 }, (_, i) => i);
+
+    // Ajouter 'X' pour effacer
+    const allKeys = [...digits, 'X'];
+
+    // Mélanger l'array
+    this.shuffleArray(allKeys);
+
+    // Ajouter deux emplacements vides aléatoirement
+    for (let i = 0; i < 2; i++) {
+      const randomPosition = Math.floor(Math.random() * (allKeys.length + 1));
+      allKeys.splice(randomPosition, 0, '');
+    }
+
+    // Diviser en rangées de 3
+    this.keys = [];
+    for (let i = 0; i < allKeys.length; i += 3) {
+      this.keys.push(allKeys.slice(i, i + 3));
+    }
   }
+
+  private shuffleArray(array: any[]): void {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
+  resetKeypad(): void {
+    this.currentValue = '';
+    this.generateRandomKeys();
+  }
+
+
+
 
   onKeyPress(key: string | number): void {
     if (key === 'X') {
-      // Delete last digit
+      // Effacer le dernier chiffre
       if (this.currentValue.length > 0) {
         this.currentValue = this.currentValue.slice(0, -1);
         this.valueChange.emit(this.currentValue);
@@ -45,7 +72,7 @@ export class NumericKeypadComponent implements OnInit {
       this.currentValue += key.toString();
       this.valueChange.emit(this.currentValue);
 
-      // If we've reached maxLength, emit complete event
+      // Si longueur maximale atteinte, émettre l'événement complet
       if (this.currentValue.length === this.maxLength) {
         this.complete.emit(this.currentValue);
       }

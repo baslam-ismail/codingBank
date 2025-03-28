@@ -1,3 +1,4 @@
+
 <div class="min-h-screen bg-gray-50">
   <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
     <!-- Retour au dashboard -->
@@ -45,8 +46,24 @@
           </div>
         </div>
         <!-- Information de compte -->
-        <div class="mt-1 text-sm text-gray-500">
+        <div class="mt-1 text-sm text-gray-500 flex items-center">
           <span>Numéro de compte: {{ account.accountNumber || account.id || 'Non disponible' }}</span>
+          <!-- Bouton copier -->
+          <app-copy-button
+            [value]="account.accountNumber || account.id || ''"
+            label="Numéro de compte"
+            class="ml-2"
+          ></app-copy-button>
+        </div>
+        <!-- ID du compte pour le debug/démo -->
+        <div *ngIf="showDebugInfo" class="mt-1 text-xs text-blue-500 flex items-center">
+          <span>ID: {{ account.id }}</span>
+          <!-- Bouton copier -->
+          <app-copy-button
+            [value]="account.id"
+            label="ID du compte"
+            class="ml-2"
+          ></app-copy-button>
         </div>
       </div>
 

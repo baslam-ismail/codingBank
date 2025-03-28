@@ -1,4 +1,3 @@
-// src/app/features/auth/pages/login/login.component.ts
 import {Component, OnInit, inject, Inject, PLATFORM_ID} from '@angular/core';
 import {CommonModule, isPlatformBrowser} from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -27,6 +26,7 @@ export class LoginComponent implements OnInit {
   isLoading = false;
   passwordVisible = false;
   isDemoMode = environment.demo;
+  private numericKeypadComponent: any;
 
   constructor(
     private fb: FormBuilder,
@@ -96,6 +96,11 @@ export class LoginComponent implements OnInit {
     if (this.loginForm.get('clientCode')?.valid) {
       this.onSubmit();
     }
+  }
+
+  resetPasswordInput(): void {
+    this.loginForm.patchValue({ password: '' });
+    this.numericKeypadComponent.resetKeypad();
   }
 
   togglePasswordVisibility(): void {

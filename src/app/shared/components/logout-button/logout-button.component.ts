@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { LogoutUseCase } from '../../../usecases/auth/logout.usecase';
+import { LogoutUseCase } from '../../../usecases';
 
 @Component({
   selector: 'app-logout-button',

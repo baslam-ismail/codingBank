@@ -1,4 +1,3 @@
-// src/app/features/accounts/pages/accounts-list/accounts-list.component.ts
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';

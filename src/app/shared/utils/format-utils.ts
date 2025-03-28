@@ -10,7 +10,6 @@ export function formatAccountNumber(accountNumber: string | undefined): string {
 
   // Si c'est un UUID classique (avec des tirets)
   if (accountNumber.includes('-')) {
-    // Prenons seulement les 8 premiers et 4 derniers caractères, séparés par ...
     const parts = accountNumber.split('-');
     if (parts.length > 0) {
       return `${parts[0]}...${parts[parts.length - 1]}`;

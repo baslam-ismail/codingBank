@@ -9,3 +9,7 @@ export * from './transaction/create-transaction.usecase';
 // Auth usecases
 export * from './auth/login.usecase';
 export * from './auth/logout.usecase';
+// Transaction usecases
+export * from './transaction/get-transactions.usecase';
+export * from './transaction/create-transaction.usecase';
+export * from './transaction/get-transaction-details.usecase'; // Ajoutez cette ligne

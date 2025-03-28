@@ -74,8 +74,17 @@
 
               <!-- Description et date -->
               <div class="flex flex-col">
-                <p class="text-sm font-medium text-gray-900">
+                <p class="text-sm font-medium text-gray-900 flex items-center">
                   {{ transaction.description || 'Sans description' }}
+                  <!-- ID de transaction avec bouton copier pour le débogage -->
+                  <span *ngIf="showDebugInfo" class="ml-2 text-xs text-blue-500 flex items-center">
+                    (ID: {{ transaction.id }}
+                    <app-copy-button
+                      [value]="transaction.id"
+                      label="ID de transaction"
+                      class="ml-1"
+                    ></app-copy-button>)
+                  </span>
                 </p>
                 <p class="text-xs text-gray-500">
                   {{ formatDate(transaction.createdAt) }}
@@ -99,33 +108,50 @@
               <span class="font-bold">-</span>{{ formatAmount(Math.abs(transaction.amount)) }}
             </div>
           </div>
+
+          <!-- Détails de débogage en mode démo -->
+          <div *ngIf="showDebugInfo" class="mt-2 text-xs text-gray-400 flex flex-wrap gap-2">
+            <span class="flex items-center">
+              Émetteur: {{ transaction.emitterAccountId }}
+              <app-copy-button
+                [value]="transaction.emitterAccountId"
+                label="ID émetteur"
+                class="ml-1"
+              ></app-copy-button>
+            </span>
+            <span class="flex items-center">
+              Destinataire: {{ transaction.receiverAccountId }}
+              <app-copy-button
+                [value]="transaction.receiverAccountId"
+                label="ID destinataire"
+                class="ml-1"
+              ></app-copy-button>
+            </span>
+          </div>
         </li>
       </ul>
     </div>
 
-
-
+    <!-- Message informationnel en mode démo -->
     <div class="px-4 py-3 mb-6 bg-yellow-50 border-l-4 border-yellow-400 rounded" *ngIf="showDebugInfo">
       <h3 class="text-yellow-800 font-medium">Mode démonstration - Historique des transactions</h3>
       <p class="mt-2 text-sm text-yellow-700">
         Vous êtes en mode démo. Voici les ID des comptes disponibles:
       </p>
       <ul class="mt-2 list-disc pl-5 text-sm text-yellow-700">
-        <li *ngFor="let account of accounts">
-          <strong>{{ account.label }}</strong>: ID = {{ account.id }},
-          Solde = {{ formatAmount(account.balance) }}
+        <li *ngFor="let account of accounts" class="flex items-center">
+          <strong>{{ account.label }}</strong>:
+          <span class="ml-2 flex items-center">
+            ID = {{ account.id }}
+            <app-copy-button
+              [value]="account.id"
+              label="ID du compte"
+              class="ml-1"
+            ></app-copy-button>
+          </span>
         </li>
       </ul>
     </div>
-    <!-- Dans la liste des transactions, ajouter l'info de débogage -->
-    <li *ngFor="let transaction of transactions" class="px-4 py-4 sm:px-6">
-      <div class="flex items-center justify-between">
-        <!-- ... reste du code inchangé ... -->
-      </div>
-      <div *ngIf="showDebugInfo" class="mt-2 text-xs text-gray-500">
-        {{ getTransactionDebugInfo(transaction) }}
-      </div>
-    </li>
 
     <!-- Message si aucune transaction -->
     <div *ngIf="!isLoading && !errorMessage && transactions.length === 0 && selectedAccountId" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">

@@ -1,5 +1,3 @@
-// src/app/features/transactions/pages/new-transaction/new-transaction.component.ts
-
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';

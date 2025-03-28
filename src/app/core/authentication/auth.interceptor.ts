@@ -9,7 +9,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Ignorer les requêtes d'auth
+
   if (req.url.includes('/auth/login') || req.url.includes('/auth/register')) {
     return next(req);
   }

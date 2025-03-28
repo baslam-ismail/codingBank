@@ -24,8 +24,7 @@ export class GetAccountDetailsUseCase {
             // Mettre à jour le compte sélectionné
             this.accountStore.setSelectedAccount(account);
 
-            // Important: Mettre également à jour ce compte dans la liste des comptes
-            // pour assurer la cohérence des soldes
+
             this.updateAccountInList(account);
           }
           this.accountStore.setLoading(false);
@@ -40,7 +39,6 @@ export class GetAccountDetailsUseCase {
     );
   }
 
-  // Cette méthode assure que le compte est également mis à jour dans la liste des comptes
   private updateAccountInList(updatedAccount: Account): void {
     // Récupérer la liste actuelle des comptes
     const currentAccounts = this.accountStore.getState().accounts;

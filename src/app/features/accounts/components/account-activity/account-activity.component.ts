@@ -41,8 +41,6 @@ export class AccountActivityComponent implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
 
 
-
-
   ngOnInit(): void {
     if (this.account && this.account.id) {
       console.log(`AccountActivity: Initializing for account ${this.account.id}`);
@@ -118,12 +116,12 @@ export class AccountActivityComponent implements OnInit, OnDestroy {
     console.log(`AccountActivity: Loading transactions for account ${this.account.id}`);
     this.isLoading = true;
 
-    this.getTransactionsUseCase.execute(this.account.id).subscribe({
-      next: transactions => {
+    this.getTransactionsUseCase.executeForAccount(this.account.id).subscribe({
+      next: (transactions: Transaction[]) => {
         console.log(`AccountActivity: Successfully loaded ${transactions.length} transactions`);
         this.isLoading = false;
       },
-      error: err => {
+      error: (err: any) => {
         console.error('AccountActivity: Error loading transactions', err);
         this.error = 'Impossible de charger les transactions récentes.';
         this.isLoading = false;

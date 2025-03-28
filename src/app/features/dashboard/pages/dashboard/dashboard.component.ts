@@ -1,4 +1,3 @@
-// src/app/features/dashboard/pages/dashboard/dashboard.component.ts
 import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';

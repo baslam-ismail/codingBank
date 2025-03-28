@@ -23,7 +23,7 @@
           <a routerLink="/accounts" routerLinkActive="border-indigo-500 text-gray-900" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
             Mes comptes
           </a>
-          <a routerLink="/transfers" routerLinkActive="border-indigo-500 text-gray-900" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+          <a routerLink="/transactions/new" routerLinkActive="border-indigo-500 text-gray-900" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
             Virements
           </a>
         </nav>
@@ -31,7 +31,19 @@
 
       <!-- Menu utilisateur -->
       <div class="flex items-center">
-        <div class="ml-3 relative">
+        <!-- Avatar et menu utilisateur -->
+        <div class="ml-3 relative flex items-center gap-2">
+          <!-- Afficher le nom de l'utilisateur -->
+          <div class="hidden md:block">
+            <span class="text-sm font-medium text-gray-700">{{ currentUser?.name }}</span>
+          </div>
+
+          <!-- Avatar utilisateur et lien vers le profil -->
+          <a routerLink="/user/profile" class="cursor-pointer" title="Mon profil">
+            <app-user-avatar [name]="currentUser?.name || ''" size="sm"></app-user-avatar>
+          </a>
+
+          <!-- Bouton de déconnexion -->
           <app-logout-button></app-logout-button>
         </div>
       </div>
@@ -40,13 +52,19 @@
 </header>
 
 <div *ngIf="showHeader && isDemoMode && currentUser" class="bg-blue-100 border-b border-blue-200 py-2">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
     <p class="text-sm text-blue-800">
       <strong>Mode Démo</strong> - Connecté en tant que: <span class="font-bold">{{ currentUser.name }}</span>
-      (Code client: {{ currentUser.clientCode }})
+      <span class="hidden sm:inline">(Code client: {{ currentUser.clientCode }})</span>
     </p>
+
+    <!-- Bouton pour copier le code client -->
+    <app-copy-button [value]="currentUser.clientCode" label="Code client"></app-copy-button>
   </div>
 </div>
+
+<!-- Toast pour les notifications de copie -->
+<app-toast></app-toast>
 
 <!-- Contenu principal - Router Outlet -->
 <main>

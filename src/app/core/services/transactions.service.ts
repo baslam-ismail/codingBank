@@ -1,8 +1,7 @@
-// src/app/core/services/transactions.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
-import { catchError, delay, tap } from 'rxjs/operators';
+import {forkJoin, mergeMap, Observable, of, throwError} from 'rxjs';
+import {catchError, delay, map, tap} from 'rxjs/operators';
 import {
   Transaction,
   CreateTransactionRequest,
@@ -11,6 +10,7 @@ import {
 import { environment } from '../../../environments/environment';
 import { DemoDataService } from './demo-data.service';
 import { DataUpdateService } from './data-update.service';
+import {Account} from '../../models/account.model';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +27,7 @@ export class TransactionsService {
   getTransactionsByAccountId(accountId: string): Observable<Transaction[]> {
     console.log(`TransactionsService: Getting transactions for account ${accountId}`);
 
-    // En mode démo
+
     if (environment.demo) {
       console.log(`TransactionsService: Using demo mode for account ${accountId}`);
       const transactions = this.demoDataService.getTransactionsByAccountId(accountId);
@@ -37,7 +37,6 @@ export class TransactionsService {
       );
     }
 
-    // En mode API réelle
     return this.http.get<Transaction[]>(`${this.apiUrl}/accounts/${accountId}/transactions`).pipe(
       tap(transactions => console.log(`TransactionsService: API returned ${transactions.length} transactions`)),
       catchError(error => {
@@ -58,12 +57,12 @@ export class TransactionsService {
       description: transaction.description
     });
 
-    // En mode démo
+
     if (environment.demo) {
       return this.createDemoTransaction(transaction);
     }
 
-    // En mode API réelle
+
     return this.createRealTransaction(transaction);
   }
 
@@ -74,12 +73,12 @@ export class TransactionsService {
     console.log('TransactionsService: Création d\'une transaction en mode démo');
 
     try {
-      // 1. Validation des données - cette étape peut lancer des erreurs
+
       console.log('TransactionsService: Validation des données de transaction');
       this.validateTransaction(transaction);
       console.log('TransactionsService: Validation réussie, ID destinataire résolu:', transaction.receiverAccountId);
 
-      // 2. Création de l'objet transaction
+
       const newTransaction: Transaction = {
         id: 'tx-' + Date.now(),
         amount: Math.round(transaction.amount * 100) / 100,
@@ -87,18 +86,18 @@ export class TransactionsService {
         emitterAccountId: transaction.emitterAccountId,
         receiverAccountId: transaction.receiverAccountId,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        status: 'COMPLETED'
       };
 
-      // 3. IMPORTANT: Mettre à jour les soldes AVANT d'ajouter la transaction
+
       console.log('TransactionsService: Mise à jour des soldes pour la transaction');
       this.demoDataService.updateAccountBalances(newTransaction);
 
-      // 4. Ajouter la transaction à l'historique
+
       console.log('TransactionsService: Ajout de la transaction à l\'historique');
       this.demoDataService.addTransaction(newTransaction);
 
-      // 5. Notifier le système des mises à jour
       console.log('TransactionsService: Envoi des notifications de mise à jour');
       this.dataUpdateService.notifyAccountsUpdated();
       this.dataUpdateService.notifyTransactionsUpdated(transaction.emitterAccountId);
@@ -108,7 +107,7 @@ export class TransactionsService {
 
       console.log('TransactionsService: Transaction créée avec succès:', newTransaction);
 
-      // 6. Retourner le résultat
+
       return of(newTransaction).pipe(
         delay(300) // Simuler un délai réseau
       );
@@ -123,22 +122,19 @@ export class TransactionsService {
    * Valider les données de transaction et résoudre les identifiants si nécessaire
    */
   private validateTransaction(transaction: CreateTransactionRequest): void {
-    // Vérifier l'existence du compte émetteur
+
     const emitterAccount = this.demoDataService.getAccountById(transaction.emitterAccountId);
     if (!emitterAccount) {
       throw new Error('Compte émetteur introuvable');
     }
 
-    // Vérifier l'existence du compte destinataire (sauf si externe)
     if (!transaction.receiverAccountId.startsWith('ext-')) {
-      // NOUVELLE LOGIQUE: Essayer de trouver par ID d'abord, puis par numéro de compte
+
       let receiverAccount = this.demoDataService.getAccountById(transaction.receiverAccountId);
 
-      // Si non trouvé par ID, essayer par numéro de compte (IBAN)
       if (!receiverAccount) {
         receiverAccount = this.demoDataService.getAccountByAccountNumber(transaction.receiverAccountId);
 
-        // Si trouvé par numéro, remplacer l'ID dans la transaction par l'ID interne
         if (receiverAccount) {
           console.log(`TransactionsService: Compte trouvé par IBAN, utilisation de l'ID interne: ${receiverAccount.id}`);
           transaction.receiverAccountId = receiverAccount.id;
@@ -149,18 +145,17 @@ export class TransactionsService {
         throw new Error('Compte destinataire introuvable');
       }
 
-      // Vérifier que ce n'est pas le même compte
       if (transaction.emitterAccountId === transaction.receiverAccountId) {
         throw new Error('Impossible d\'effectuer un virement vers le même compte');
       }
     }
 
-    // Vérifier que le montant est positif
+
     if (transaction.amount <= 0) {
       throw new Error('Le montant doit être supérieur à 0');
     }
 
-    // Vérifier que le compte émetteur a un solde suffisant
+
     if (emitterAccount.balance < transaction.amount) {
       throw new Error(`Solde insuffisant (${emitterAccount.balance}€) pour effectuer ce virement de ${transaction.amount}€`);
     }
@@ -170,31 +165,28 @@ export class TransactionsService {
    * Implémentation avec l'API réelle
    */
   private createRealTransaction(transaction: CreateTransactionRequest): Observable<TransactionResponse> {
-    // IMPORTANT: Pour le mode API réelle, on doit également gérer le cas où l'IBAN est utilisé
-    // mais l'API attend un UUID. Nous devons donc résoudre l'IBAN vers l'UUID avant d'envoyer à l'API.
 
     try {
-      // Si receiverAccountId ressemble à un IBAN (commence par "FR")
+
       if (transaction.receiverAccountId.startsWith('FR')) {
-        // En production, vous feriez une requête API supplémentaire pour résoudre l'IBAN
-        // Ici, nous simulons cette résolution
+
         console.log("TransactionsService: Tentative de résolution d'IBAN vers UUID avant envoi à l'API");
         const demoAccount = this.demoDataService.getAccountByAccountNumber(transaction.receiverAccountId);
 
         if (demoAccount) {
-          // Remplacer l'IBAN par l'UUID avant d'envoyer à l'API
+
           console.log(`TransactionsService: IBAN résolu vers UUID: ${demoAccount.id}`);
           transaction.receiverAccountId = demoAccount.id;
         }
       }
     } catch (error) {
       console.warn('TransactionsService: Erreur lors de la résolution IBAN->UUID:', error);
-      // Continuer avec la valeur originale, l'API décidera
+
     }
 
     return this.http.post<TransactionResponse>(`${this.apiUrl}/transactions/emit`, transaction).pipe(
       tap(() => {
-        // Notifier le système des mises à jour après réponse positive de l'API
+
         this.dataUpdateService.notifyAccountsUpdated();
         this.dataUpdateService.notifyTransactionsUpdated(transaction.emitterAccountId);
         if (!transaction.receiverAccountId.startsWith('ext-')) {
@@ -217,6 +209,87 @@ export class TransactionsService {
         }
 
         return throwError(() => new Error('Erreur lors de la transaction. Veuillez réessayer plus tard'));
+      })
+    );
+  }
+
+  getTransactionById(transactionId: string): Observable<Transaction | null> {
+    console.log(`TransactionsService: Getting transaction details for ID ${transactionId}`);
+
+
+    if (environment.demo) {
+      console.log('TransactionsService: Using demo mode for transaction details');
+
+      const allTransactions = this.demoDataService.getCurrentTransactions();
+
+      const transaction = allTransactions.find(t => t.id === transactionId);
+
+      if (transaction) {
+        return of(transaction).pipe(
+          delay(300), // Simuler un délai réseau
+          tap(() => console.log(`TransactionsService: Found demo transaction details`, transaction))
+        );
+      } else {
+        console.error(`TransactionsService: Transaction with ID ${transactionId} not found`);
+        return throwError(() => new Error('Transaction introuvable'));
+      }
+    }
+
+    // En mode API réelle
+    return this.http.get<Transaction>(`${this.apiUrl}/transactions/${transactionId}`).pipe(
+      tap(transaction => console.log(`TransactionsService: API returned transaction details`, transaction)),
+      catchError(error => {
+        console.error('TransactionsService: API error fetching transaction details', error);
+        if (error.status === 404) {
+          return throwError(() => new Error('Transaction introuvable'));
+        }
+        return throwError(() => new Error('Erreur lors de la récupération des détails de la transaction'));
+      })
+    );
+  }
+
+  getAllTransactions(): Observable<Transaction[]> {
+    console.log('TransactionsService: Getting all transactions');
+
+    // En mode démo
+    if (environment.demo) {
+      const transactions = this.demoDataService.getCurrentTransactions();
+      return of(transactions).pipe(
+        delay(300),
+        tap(() => console.log(`TransactionsService: Returned ${transactions.length} demo transactions`))
+      );
+    }
+
+
+    return this.http.get<Account[]>(`${this.apiUrl}/accounts`).pipe(
+      tap(accounts => console.log('TransactionsService: Got accounts', accounts)),
+      mergeMap(accounts => {
+        if (accounts.length === 0) {
+          return of([]);  // Aucun compte, donc aucune transaction
+        }
+
+
+        const transactionRequests = accounts.map(account =>
+          this.http.get<Transaction[]>(`${this.apiUrl}/accounts/${account.id}/transactions`).pipe(
+            catchError(error => {
+              console.warn(`Error fetching transactions for account ${account.id}`, error);
+              return of([]);  // En cas d'erreur, retourner un tableau vide
+            })
+          )
+        );
+
+        return forkJoin(transactionRequests).pipe(
+          map(transactionsArrays => {
+
+            const allTransactions = transactionsArrays.flat();
+            console.log(`TransactionsService: Combined ${allTransactions.length} transactions from all accounts`);
+            return allTransactions;
+          })
+        );
+      }),
+      catchError(error => {
+        console.error('TransactionsService: API error fetching all transactions', error);
+        return of([]);
       })
     );
   }
